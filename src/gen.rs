@@ -10,27 +10,10 @@ use std::{
 };
 /*
 This function should take the code from the host and the guest and generate a fully working RiscZero program with the predefined code in the host/guest.
-
-1. check that cargo-risczero is installed
-    - if not then install
-
-2. create an out directory
-    - in that create a new risczero project with the risczero tool
-
-3. update the Cargo.toml files with the correct name, from the main project dir name
-
-4. check the dependencies installed by the user
-    - if it's used by the host, install it to the host
-    - if it's used by the guest, install it to the guest
-
-5. Add premade code to host & guest
-
-6. Add code from the user to host & guest
-
-7. Check that there are no errors & that everyting builds
+TODO: Check that there are no errors & that everyting builds
 */
 pub fn gen() {
-    // 1.
+    // 1. check that cargo-risczero is installed
     let is_risczero_installed = check_risczero_install();
     println!("Risc 0 installed: {:?}", is_risczero_installed);
 
@@ -38,7 +21,7 @@ pub fn gen() {
         panic!("Run cargo install cargo-risczero")
     }
 
-    // 2.
+    // 2. create an out directory
     // check that verifier dir exists, if not we're not in a Ceres project
     let dir_path = Path::new("verifier");
     if !dir_path.exists() || !dir_path.is_dir() {
@@ -70,10 +53,7 @@ pub fn gen() {
         panic!("Failed to create risczero project")
     }
 
-    // 3.
-    // enames:
-    // - methods/Cargo.toml --> change to <prject_name>-methods
-    // modify line number 1 to name = format!("{}-methods", project_name)
+    // 3. update the Cargo.toml files with the correct name, from the main project dir name
     println!("Risc zero created");
 
     let file_path = Path::new(project_name).join("methods").join("Cargo.toml");
@@ -81,18 +61,21 @@ pub fn gen() {
     let modified_name = format!("name = \"{}-methods\"", project_name);
 
     change_line(&file_path, 1, modified_name.as_str());
-    use_std(&Path::new(project_name).join("methods").join("guest").join("Cargo.toml"));
 
+    let host_cargo_file_path = Path::new(project_name).join("host").join("Cargo.toml");
+    update_host_method_import(&host_cargo_file_path, &project_name);
+    
     // - methods/guest/Cargo.toml --> name = "<project-name>"
     let file_guest_path = Path::new(project_name)
-        .join("methods")
-        .join("guest")
-        .join("Cargo.toml");
+    .join("methods")
+    .join("guest")
+    .join("Cargo.toml");
 
     let modified_content = format!("name = \"{}\"", project_name);
-
+    
     change_line(&file_guest_path, 2, modified_content.as_str());
-
+    use_std(&file_guest_path);
+    
     // - host/src/main.rs --> raname use <project_name>-methods::{PROJECT_NAME-ELF, PROJECT_NAME_ID}
     let file_host_path = Path::new(project_name)
         .join("host")
@@ -108,8 +91,7 @@ pub fn gen() {
 
     change_line(&file_host_path, 3, modified_host_line.as_str());
 
-    // 4.
-    // - check installed packages -> install them to out
+    // 4. check the dependencies installed by the user -> install them to out
     let current_dir = env::current_dir().unwrap();
     let parent_dir = current_dir.parent().expect("Parent directory not found");
 
@@ -134,10 +116,9 @@ pub fn gen() {
         installed_packages.guest,
     );
 
-    // 5.
-    // - prepare guest and host code
+    // 5. Add premade code to host & guest
     prepare_guest_host_code(project_name);
-    // - copy code that user wrote
+    // 6. Add code from the user to host & guest
     add_guest_host_code(project_name);
 }
 
@@ -209,6 +190,25 @@ fn use_std(file_path: &PathBuf) {
 
         if line.contains("risc0-zkvm") {
             writeln!(writer, "{}", line.replace("default-features = false", "default-features = false, features = [ \"std\" ]")).unwrap();
+        } else {
+            writeln!(writer, "{}", line).unwrap();
+        }
+    }
+}
+
+fn update_host_method_import(file_path: &Path, project_name: &str) {
+    let file_content: Vec<String> = fs::read_to_string(file_path)
+        .unwrap()
+        .lines()
+        .map(|line| line.to_string())
+        .collect();
+
+    let file = fs::File::create(&file_path).unwrap();
+    let mut writer = BufWriter::new(file);
+
+    for line in file_content {
+        if line.contains("methods = ") {
+            writeln!(writer, "{}", line.replace("methods", &format!("{}-methods", project_name))).unwrap();
         } else {
             writeln!(writer, "{}", line).unwrap();
         }
@@ -298,7 +298,7 @@ fn prepare_guest_host_code(project_name: &str) {
             writeln!(host_writer, "{}", "    let session = exec.run().unwrap();").unwrap();
             writeln!(host_writer, "{}", "    let receipt = session.prove().unwrap();").unwrap();
             writeln!(host_writer, "{}", "    let cid: String = from_slice(&receipt.journal).unwrap();").unwrap();
-            writeln!(host_writer, "{}", "    println!(\"Verified data with CID: {{}}\", cid);").unwrap();
+            writeln!(host_writer, "{}", "    println!(\"Verified data with CID: {}\", cid);").unwrap();
 
             skip = true;
             continue;
