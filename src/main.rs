@@ -3,22 +3,21 @@ use core::panic;
 
 mod init;
 mod gen;
+mod build;
 
 fn main() {
     let matches = cli().get_matches();
-    println!("{:?}", matches); // TODO handle matches
 
     match matches.subcommand() {
         Some(("init", sub_matches)) => {
             let folder_name = sub_matches.get_one::<String>("NAME").expect("required");
             init::init(folder_name);
         }
-        Some(("gen", sub_matches)) => {
-            println!("{:?}", sub_matches);
+        Some(("gen", _)) => {
             gen::gen();
         }
-        Some(("build", sub_matches)) => {
-            println!("{:?}", sub_matches);
+        Some(("build", _)) => {
+            build::build();
         }
         Some(("test", sub_matches)) => {
             println!("{:?}", sub_matches);

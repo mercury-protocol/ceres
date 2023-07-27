@@ -10,7 +10,7 @@ use std::{
 };
 /*
 This function should take the code from the host and the guest and generate a fully working RiscZero program with the predefined code in the host/guest.
-TODO: Check that there are no errors & that everyting builds
+TODO: have code to save the receipt in some form
 */
 pub fn gen() {
     // 1. check that cargo-risczero is installed
@@ -208,7 +208,7 @@ fn update_host_method_import(file_path: &Path, project_name: &str) {
 
     for line in file_content {
         if line.contains("methods = ") {
-            writeln!(writer, "{}", line.replace("methods", &format!("{}-methods", project_name))).unwrap();
+            writeln!(writer, "{}", line.replace("methods =", &format!("{}-methods =", project_name))).unwrap();
         } else {
             writeln!(writer, "{}", line).unwrap();
         }
@@ -291,6 +291,9 @@ fn prepare_guest_host_code(project_name: &str) {
         if line.contains("fn main()") {
             writeln!(host_writer, "{}", line).unwrap();
             writeln!(host_writer, "{}", "    let args: Vec<String> = env::args().collect();").unwrap();
+            writeln!(host_writer, "{}", "    if args[1] == \"get-img-id\" {").unwrap();
+            let get_img_id_cmd = format!("        let hex_string: String = {}_ID.iter().map(|&value| format!(\"{{:08X}}\", value)).collect(); // Use {{:08X}} for 8-digit uppercase hexadecimal.collect();\n        println!(\"GUEST IMAGE ID: 0x{{}}\", hex_string);\n        return;\n    }}\n", project_name.to_uppercase());
+            writeln!(host_writer, "{}", get_img_id_cmd).unwrap();
             writeln!(host_writer, "{}", "    let data: Vec<u8> = hostlib::prepare(args);\n").unwrap();
             writeln!(host_writer, "{}", "    let env = ExecutorEnv::builder().add_input(&to_vec(&data.as_slice()).unwrap()).build();\n").unwrap();
             let exec_cmd = format!("    let mut exec = Executor::from_elf(env, {}_ELF).unwrap();\n", project_name.to_uppercase());
