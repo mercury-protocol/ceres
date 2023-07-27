@@ -4,6 +4,7 @@ use core::panic;
 mod init;
 mod gen;
 mod build;
+mod pr;
 
 fn main() {
     let matches = cli().get_matches();
@@ -19,11 +20,12 @@ fn main() {
         Some(("build", _)) => {
             build::build();
         }
-        Some(("test", sub_matches)) => {
-            println!("{:?}", sub_matches);
+        Some(("new-pr", _)) => {
+            pr::new_pr();
         }
-        Some(("push", sub_matches)) => {
-            println!("{:?}", sub_matches);
+        Some(("add-pr", sub_matches)) => {
+            let repo = sub_matches.get_one::<String>("REPO").expect("Please provide the path to the pr.md file for the collector verifier");
+            pr::add_pr(repo);
         }
         _ => panic!("Unknown subcommand"),
     }
@@ -57,7 +59,13 @@ fn cli() -> Command {
         .arg_required_else_help(true)
     )
     .subcommand(
-        Command::new("push")
-        .about("Prepare and push a pull request the Mercury data collectors repo")
+        Command::new("new-pr")
+        .about("Prepare a pull request to the Mercury data collectors repo")
+    )
+    .subcommand(
+        Command::new("add-pr")
+        .about("Updates the Mercury data collectors repo with a new PR")
+        .arg(arg!(<REPO> "Path to a pr.md file for a collector verifier project"))
+        .arg_required_else_help(true)
     )
 }

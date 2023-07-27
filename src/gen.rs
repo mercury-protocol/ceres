@@ -56,6 +56,11 @@ pub fn gen() {
     // 3. update the Cargo.toml files with the correct name, from the main project dir name
     println!("Risc zero created");
 
+    match fs::create_dir(Path::new(project_name).join("sample")) {
+        Ok(_) => println!("Created sample folder"),
+        Err(err) => panic!("Error creating folder: {}", err),
+    }
+
     let file_path = Path::new(project_name).join("methods").join("Cargo.toml");
 
     let modified_name = format!("name = \"{}-methods\"", project_name);
@@ -64,6 +69,14 @@ pub fn gen() {
 
     let host_cargo_file_path = Path::new(project_name).join("host").join("Cargo.toml");
     update_host_method_import(&host_cargo_file_path, &project_name);
+
+    let gitignore_path = Path::new(project_name).join(".gitignore");
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open(gitignore_path)
+        .unwrap();
+    file.write_all(".prinfo".as_bytes()).expect("failed to write to .gitignore");
     
     // - methods/guest/Cargo.toml --> name = "<project-name>"
     let file_guest_path = Path::new(project_name)
