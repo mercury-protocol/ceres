@@ -1,18 +1,31 @@
-use clap::{arg, Command};
+use clap::{arg, Arg, ArgAction, Command};
 use core::panic;
 
-mod init;
-mod gen;
 mod build;
+mod gen;
+mod init;
 mod pr;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let matches = cli().get_matches();
 
     match matches.subcommand() {
         Some(("init", sub_matches)) => {
             let folder_name = sub_matches.get_one::<String>("NAME").expect("required");
-            init::init(folder_name);
+            let lang: init::CollectorLang;
+
+            if sub_matches.get_flag("go") {
+                lang = init::CollectorLang::GO;
+            } else if sub_matches.get_flag("js") {
+                lang = init::CollectorLang::JS;
+            } else if sub_matches.get_flag("py") {
+                lang = init::CollectorLang::PY;
+            } else {
+                panic!("No lang specified")
+            }
+
+            init::init(folder_name, lang).await;
         }
         Some(("gen", _)) => {
             gen::gen();
@@ -24,7 +37,9 @@ fn main() {
             pr::new_pr();
         }
         Some(("add-pr", sub_matches)) => {
-            let repo = sub_matches.get_one::<String>("REPO").expect("Please provide the path to the pr.md file for the collector verifier");
+            let repo = sub_matches
+                .get_one::<String>("REPO")
+                .expect("Please provide the path to the pr.md file for the collector verifier");
             pr::add_pr(repo);
         }
         _ => panic!("Unknown subcommand"),
@@ -34,8 +49,8 @@ fn main() {
 // Ceres
 fn cli() -> Command {
     //     .get_matches_from(vec!["init", "gen", "build", "test", "push"])
-    Command::new("mcycv")
-    .about("Mercury Collector Verifier SDK for creating data collectors and verifiers for any data type")
+    Command::new("ceres")
+    .about("Ceres is an SDK for creating data collectors and verifiers for any data type to be sold on the Mercury Protocol")
     .subcommand_required(true)
     .allow_external_subcommands(true)
     .subcommand(
@@ -43,6 +58,24 @@ fn cli() -> Command {
         .about("Creates a new empty collector-verifier project folder")
         .arg(arg!(<NAME> "The name of the project"))
         .arg_required_else_help(true)
+        .arg(
+            Arg::new("go")
+            .long("go")
+            .action(ArgAction::SetTrue)
+            .help("Initialize a Go collector package"),
+        )
+        .arg(
+            Arg::new("js")
+            .long("js")
+            .action(ArgAction::SetTrue)
+            .help("Initialize a JavaScript collector package")
+        )
+        .arg(
+            Arg::new("py")
+            .long("py")
+            .action(ArgAction::SetTrue)
+            .help("Initialize a Python collector package")
+        )
     )
     .subcommand(
         Command::new("gen")

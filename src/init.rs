@@ -1,18 +1,28 @@
 use core::panic;
-use std::{fs, io::Write, path::Path};
+use std::{env, fs, io::Write, path::{Path, PathBuf}};
+use serde::Deserialize;
+use serde_json;
+use reqwest::{self, header::{HeaderMap, HeaderValue, USER_AGENT}};
 
-pub fn init(main_name: &String) {
+#[derive(Debug, PartialEq, Eq)]
+pub enum CollectorLang {
+    GO,
+    JS,
+    PY
+}
+
+pub async fn init(main_name: &String, lang: CollectorLang) {
     match fs::create_dir(main_name) {
         Ok(_) => println!("Created {} folder", main_name),
         Err(err) => panic!("Error creating folder: {}", err),
     }
-
     let collector_dir_path = Path::new(main_name).join("collector");
-
-    match fs::create_dir(collector_dir_path) {
+    
+    match fs::create_dir(&collector_dir_path) {
         Ok(_) => println!("Created collector folder"),
         Err(err) => panic!("Error creating folder: {}", err),
     }
+    pull_code(lang, &collector_dir_path).await;
 
     let verifier_dir_path = Path::new(main_name).join("verifier");
 
@@ -79,5 +89,73 @@ pub fn init(main_name: &String) {
             }
         }
         Err(err) => panic!("Error creating file: {}", err),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct RepositoryContents {
+    name: String,
+    download_url: String,
+}
+
+async fn pull_code(lang: CollectorLang, path: &PathBuf) {
+    let current_dir = env::current_dir().unwrap();
+
+    if let Err(err) = env::set_current_dir(&path) {
+        eprintln!("Failed to change working directory: {}", err);
+    }
+
+    let repo_owner = "mercury-protocol";
+    let repo_name = "ceres-p2p-helpers";
+    let folder_path: &str;
+
+    if lang == CollectorLang::GO {
+        folder_path = "ceres-go";
+    } else if lang == CollectorLang::JS {
+        folder_path = "ceres-js";
+    } else if lang == CollectorLang::PY {
+        folder_path = "ceres-go";
+    } else {
+        panic!("unimplemented lang")
+    }
+
+    match fs::create_dir(folder_path) {
+        Ok(_) => {
+            if let Err(err) = env::set_current_dir(folder_path) {
+                eprintln!("Failed to change working directory: {}", err);
+            }
+        },
+        Err(err) => panic!("Error creating folder: {}", err),
+    }
+
+    let mut headers = HeaderMap::new();
+    headers.insert(USER_AGENT, HeaderValue::from_static("ceres/1.0"));
+
+
+    let client = reqwest::Client::builder().default_headers(headers).build().unwrap();
+
+    let url = format!(
+        "https://api.github.com/repos/{}/{}/contents/{}",
+        repo_owner, repo_name, folder_path
+    );
+
+    let response = client.get(&url).send().await.expect("error getting code folder");
+
+    if response.status().is_success() {
+        let json_str = response.text().await.unwrap();
+        let contents: Vec<RepositoryContents> = serde_json::from_str(&json_str).expect("failed to deserialize repo contents");
+
+        for item in contents {
+            let file_response = client.get(&item.download_url).send().await.expect("failed to pull file");
+            if file_response.status().is_success() {
+                let file_content = file_response.bytes().await.unwrap().to_vec();
+                let mut file = fs::File::create(&item.name).expect("failed to create file");
+                file.write_all(&file_content).expect("failed to write file content");
+            }
+        }
+    }
+
+    if let Err(err) = env::set_current_dir(&current_dir) {
+        eprintln!("Failed to change working directory: {}", err);
     }
 }

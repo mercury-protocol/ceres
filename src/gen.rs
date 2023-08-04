@@ -304,12 +304,12 @@ fn prepare_guest_host_code(project_name: &str) {
         if line.contains("fn main()") {
             writeln!(host_writer, "{}", line).unwrap();
             writeln!(host_writer, "{}", "    let args: Vec<String> = env::args().collect();").unwrap();
-            writeln!(host_writer, "{}", "    if args[1] == \"get-img-id\" {").unwrap();
+            writeln!(host_writer, "{}", "    if args.len() > 1 && args[1] == \"get-img-id\" {").unwrap();
             let get_img_id_cmd = format!("        let hex_string: String = {}_ID.iter().map(|&value| format!(\"{{:08X}}\", value)).collect(); // Use {{:08X}} for 8-digit uppercase hexadecimal.collect();\n        println!(\"GUEST IMAGE ID: 0x{{}}\", hex_string);\n        return;\n    }}\n", project_name.to_uppercase());
             writeln!(host_writer, "{}", get_img_id_cmd).unwrap();
             writeln!(host_writer, "{}", "    let data: Vec<u8> = hostlib::prepare(args);\n").unwrap();
             writeln!(host_writer, "{}", "    let env = ExecutorEnv::builder().add_input(&to_vec(&data.as_slice()).unwrap()).build();\n").unwrap();
-            let exec_cmd = format!("    let mut exec = Executor::from_elf(env, {}_ELF).unwrap();\n", project_name.to_uppercase());
+            let exec_cmd = format!("    let mut exec = default_executor_from_elf(env, {}_ELF).unwrap();\n", project_name.to_uppercase());
             writeln!(host_writer, "{}", exec_cmd).unwrap();
             writeln!(host_writer, "{}", "    let session = exec.run().unwrap();").unwrap();
             writeln!(host_writer, "{}", "    let receipt = session.prove().unwrap();").unwrap();
