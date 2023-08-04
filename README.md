@@ -1,3 +1,4 @@
+![banner-ceres](https://github.com/mercury-protocol/ceres/assets/44027725/26ae28a1-3be0-4e31-912d-9dc5a789e0d9)
 # Ceres
 
 ## What is Ceres?
