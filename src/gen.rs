@@ -9,8 +9,7 @@ use std::{
     process::Command,
 };
 /*
-This function should take the code from the host and the guest and generate a fully working RiscZero program with the predefined code in the host/guest.
-TODO: have code to save the receipt in some form
+This function takes the code from the host and the guest and generate a fully working RiscZero program with the predefined code in the host/guest.
 */
 pub fn gen() {
     // 1. check that cargo-risczero is installed
@@ -261,6 +260,10 @@ fn get_installed_packages(file_path: &Path) -> Packages {
             packages.guest.push(line);
         }
     }
+    if !packages.host.contains(&"bincode".to_string()) {
+        packages.host.push("bincode = \"1.3.3\"".to_string());
+    }
+
     if !packages.guest.contains(&"cid = \"0.7.0\"".to_string()) {
         packages.guest.push("cid = \"0.7.0\"".to_string());
     }
@@ -314,7 +317,12 @@ fn prepare_guest_host_code(project_name: &str) {
             writeln!(host_writer, "{}", "    let session = exec.run().unwrap();").unwrap();
             writeln!(host_writer, "{}", "    let receipt = session.prove().unwrap();").unwrap();
             writeln!(host_writer, "{}", "    let cid: String = from_slice(&receipt.journal).unwrap();").unwrap();
-            writeln!(host_writer, "{}", "    println!(\"Verified data with CID: {}\", cid);").unwrap();
+            writeln!(host_writer, "{}", "    println!(\"Verified data with CID: {}\", cid);\n").unwrap();
+            writeln!(host_writer, "{}", "    let encoded = bincode::serialize(&receipt).unwrap();\n").unwrap();
+            writeln!(host_writer, "{}", "    let file_path = format!(\"{}.bin\", cid);").unwrap();
+            writeln!(host_writer, "{}", "    let mut file = File::create(file_path).unwrap();").unwrap();
+            writeln!(host_writer, "{}", "    file.write_all(&encoded).expect(\"Failed to write encoded receipt\");").unwrap();
+            writeln!(host_writer, "{}", "    println!(\"serialized receipt written to file\");").unwrap();
 
             skip = true;
             continue;
@@ -333,6 +341,9 @@ fn prepare_guest_host_code(project_name: &str) {
         if line.contains("ELF") && line.contains("ID") {
             writeln!(host_writer, "{}", "use std::env;").unwrap();
             writeln!(host_writer, "{}", "mod hostlib;").unwrap();
+            writeln!(host_writer, "{}", "use std::fs::File;").unwrap();
+            writeln!(host_writer, "{}", "use std::io::Write;").unwrap();
+            writeln!(host_writer, "{}", "use bincode;").unwrap();
         }
     }
 

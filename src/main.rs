@@ -37,10 +37,10 @@ async fn main() {
             pr::new_pr();
         }
         Some(("add-pr", sub_matches)) => {
-            let repo = sub_matches
-                .get_one::<String>("REPO")
+            let pr_file = sub_matches
+                .get_one::<String>("PR_FILE")
                 .expect("Please provide the path to the pr.md file for the collector verifier");
-            pr::add_pr(repo);
+            pr::add_pr(pr_file);
         }
         _ => panic!("Unknown subcommand"),
     }
@@ -86,19 +86,13 @@ fn cli() -> Command {
         .about("Creates an executable binary from the verifier code")
     )
     .subcommand(
-        Command::new("test")
-        .about("Tests the verifier with the given data")
-        .arg(arg!(<PATH> "Path to the data"))
-        .arg_required_else_help(true)
-    )
-    .subcommand(
         Command::new("new-pr")
         .about("Prepare a pull request to the Mercury data collectors repo")
     )
     .subcommand(
         Command::new("add-pr")
         .about("Updates the Mercury data collectors repo with a new PR")
-        .arg(arg!(<REPO> "Path to a pr.md file for a collector verifier project"))
+        .arg(arg!(<PR_FILE> "Path to a pr.md file for a collector verifier project"))
         .arg_required_else_help(true)
     )
 }

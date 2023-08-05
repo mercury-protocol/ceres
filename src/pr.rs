@@ -130,13 +130,13 @@ pub fn new_pr() {
 
     println!("Success! PR.md file generated. Now please follow the following steps: ");
     println!("1. Run \"git clone https://github.com/mercury-protocol/mcy-data-collectors.git\"");
-    println!("2. Go into the cloned repo and run \"ceres add-pr <PATH TO YOUR COLLECTOR REPO>\"");
+    println!("2. Go into the cloned repo and run \"ceres add-pr <PATH TO YOUR PR.MD file>\"");
     println!("3. Push your changes and submit a pull request where you paste in the contents of the PR.md file");
 }
 
-pub fn add_pr(repo: &String) {
+pub fn add_pr(pr_file: &String) {
     // open PR file and read the relevant lines
-    let pr_info = fs::read_to_string(format!("{}/.prinfo", repo)).unwrap();
+    let pr_info = fs::read_to_string(format!("{}/.prinfo", pr_file)).unwrap();
 
     let pr: Pr = serde_json::from_str(&pr_info).unwrap();
 
