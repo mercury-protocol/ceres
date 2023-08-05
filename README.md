@@ -22,7 +22,7 @@ Ceres uses [RiscZero](https://github.com/risc0/risc0), a general computing platf
 Zero-knowledge proofs allow one party (i.e. *the data collector*) to convince another party (i.e. *the data buyer*) that something is true (i.e. *that the data is authentic and correct*) without revealing all the details (i.e. *private data*).   
      
 ## How to build collectors & verifiers with Ceres    
-Ceres helps developers with creating data collectors and verifiers, so that they only have to focus on the logic of the data collection and verification, while Ceres takes care of transporting the data, generating the RiscZero project, and preparing a pull request to our [data collectors-verifiers repo](https://github.com/mercury-protocol/mcy-data-collectors).
+Ceres helps developers with creating data collectors and verifiers, so that they only have to focus on the logic of the data collection and verification, while Ceres takes care of transporting the data, generating the RiscZero project, and preparing a pull request to our [data collectors-verifiers repo](https://github.com/mercury-protocol/mcy-data-collectors).    
 The architecture of the **data collector** program is completely up to the developer. Data can come from any source, and we don't pretend to have an answer to what data types are worth collecting.   
 The developer is responsible for implementing the data collection logic, but can use one of the data transport implementations provided by Ceres to transfer the data to a data DAO node.   
 
