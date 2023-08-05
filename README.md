@@ -1,5 +1,5 @@
 
-![banner-ceres](https://github.com/mercury-protocol/ceres/assets/44027725/14c4413f-e4ad-4ff8-a9b3-62c35042c196)
+![banner-ceres](https://i.imgur.com/yQmEYC5.png)
 
 # Ceres
 
